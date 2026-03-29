@@ -1,21 +1,29 @@
+import os
+import time
+
 from flask import Flask, request, render_template, render_template_string
 
 app = Flask(__name__)
+app.config['FILESHARE_URL'] = os.environ.get('FILESHARE_URL', '')
 
 clipboard_text = ''
 history_text = ''
 
 
+def get_current_time():
+    return time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time()))
+
+
 # 初始页面
 @app.route('/')
 def index():
-    return render_template('index.html', messages=clipboard_text, height=calculate_height(clipboard_text))
+    return render_template('index.html', messages=clipboard_text,
+                           fileshare_url=app.config['FILESHARE_URL'])
 
 
 # 处理表单提交
 @app.route('/', methods=['POST'])
 def add_message():
-    print(request.form)
     global clipboard_text
     global history_text
     if request.form['clear'] == '1':
@@ -24,8 +32,7 @@ def add_message():
     else:
         message = request.form['message']
         clipboard_text = message
-        history_text = history_text + str(get_current_time()) + ':\n' + message + '\n\n'
-    # 重定向到首页
+        history_text = history_text + get_current_time() + ':\n' + message + '\n\n'
     return index()
 
 
@@ -35,18 +42,5 @@ def text():
                                   '<body><pre>{{ message }}</pre></body>', message=history_text)
 
 
-def get_current_time():
-    import time
-    return time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time()))
-
-
-def calculate_height(content):
-    height = content.count('\n') * 16 + 30
-    if height < 160:
-        height = 160
-    return height
-
-
 if __name__ == '__main__':
-    print("192.168.222.108:8888")
     app.run(host='0.0.0.0', port=8888, debug=True)
